@@ -32,16 +32,58 @@ class Bat:
         self.speed = speed
         self.phase = phase
         self.bat_type = bat_type    # "scout" or "stalker"
+        self.kind = bat_type
         # --- shooting support: a bat can be killed and later respawns at home
         self.home = (x, y, self.dx, self.dy)
         self.alive = True
         self.respawn = 0.0          # countdown until it comes back
         self.spawn_age = 1.0        # < 0.5 while it is "growing in" (scaling)
+        self.path = []              # BFS corridor waypoints [(r, c), ...]
+        self.repath_tick = 0.0
 
     def revive(self):
         self.x, self.y, self.dx, self.dy = self.home
         self.alive = True
         self.spawn_age = 0.0
+        self.path = []
+
+    def update_ai(self, level, px, py, dt):
+        """Intelligent corridor navigation: Stalkers use BFS pathfinding toward player; Scouts patrol."""
+        if not self.alive:
+            return
+
+        br, bc = int(self.y // CELL), int((self.x - OFF_X) // CELL)
+        pr, pc = int(py // CELL), int((px - OFF_X) // CELL)
+        dist_cells = abs(br - pr) + abs(bc - pc)
+
+        # Stalkers actively hunt via BFS; Scouts switch to chase only when player is nearby in lit corridor
+        should_hunt = (self.bat_type == "stalker") or (dist_cells <= 5)
+
+        self.repath_tick += dt
+        if should_hunt and (self.repath_tick >= 0.25 or not self.path):
+            self.repath_tick = 0.0
+            if 0 <= br < ROWS and 0 <= bc < COLS and 0 <= pr < ROWS and 0 <= pc < COLS:
+                self.path = level.find_bfs_path((br, bc), (pr, pc))
+
+        # Follow BFS waypoints if hunting and path exists
+        if should_hunt and len(self.path) > 1:
+            target_rc = self.path[1]
+            tx, ty = level.cell_center(*target_rc)
+            wx, wy = tx - self.x, ty - self.y
+            dist_to_wp = math.hypot(wx, wy)
+            if dist_to_wp < 4:
+                self.path.pop(0)
+            elif dist_to_wp > 0.01:
+                self.dx = wx / dist_to_wp
+                self.dy = wy / dist_to_wp
+        else:
+            # Standard corridor patrol with bounce on walls
+            if level.is_wall(self.x + self.dx * 14, self.y + self.dy * 14):
+                self.dx, self.dy = -self.dx, -self.dy
+
+        # Move with speed
+        self.x += self.dx * self.speed * dt
+        self.y += self.dy * self.speed * dt
 
 
 class Level:
@@ -57,7 +99,8 @@ class Level:
         far = sorted(self.dist, key=self.dist.get, reverse=True)
         self.exit = self.cell_center(*far[0])
         self.keys = [self.cell_center(r, c) for r, c in self._pick_keys(rng, nkeys, far[0])]
-        self.boosts = [self.cell_center(r, c) for r, c in self._pick_boosts(rng, far[0])] if index >= 1 else []
+        self.boosts = [self.cell_center(r, c) for r, c in self._pick_boosts(rng, far[0], "surge")]
+        self.aegis = [self.cell_center(r, c) for r, c in self._pick_boosts(rng, far[0], "aegis")]
         self.bats = self._pick_bats(rng, nbats, bspeed, index)
         self.segments = self._wall_segments()
 
@@ -144,13 +187,43 @@ class Level:
             chosen.append(others.pop())
         return chosen
 
-    def _pick_boosts(self, rng, exit_cell):
+    def find_bfs_path(self, start_rc, target_rc):
+        """Returns the shortest sequence of (r, c) open corridor cells from start_rc to target_rc."""
+        if start_rc == target_rc:
+            return [target_rc]
+        if not (0 <= target_rc[0] < ROWS and 0 <= target_rc[1] < COLS) or self.grid[target_rc[0]][target_rc[1]] == 1:
+            return []
+        visited = {start_rc: None}
+        q = deque([start_rc])
+        while q:
+            curr = q.popleft()
+            if curr == target_rc:
+                break
+            for n in self._neighbours(*curr):
+                if n not in visited:
+                    visited[n] = curr
+                    q.append(n)
+        if target_rc not in visited:
+            return []
+        path = []
+        curr = target_rc
+        while curr is not None:
+            path.append(curr)
+            curr = visited[curr]
+        path.reverse()
+        return path
+
+    def _pick_boosts(self, rng, exit_cell, crystal_type="surge"):
         start_cell = getattr(self, "start_cell", (1, 1))
-        candidates = [c for c, d in self.dist.items() if d > 6 and c != exit_cell and c != start_cell]
-        if candidates:
-            rng.shuffle(candidates)
-            return [candidates[0]]
-        return []
+        candidates = [c for c, d in self.dist.items() if d > 5 and c != exit_cell and c != start_cell]
+        if not candidates:
+            return []
+        shuffled = list(candidates)
+        rng.shuffle(shuffled)
+        if crystal_type == "surge":
+            return [shuffled[0]] if shuffled else []
+        else:
+            return [shuffled[1]] if len(shuffled) > 1 else []
 
     def _pick_bats(self, rng, n, speed, level_index=0):
         if n == 0:

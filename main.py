@@ -20,6 +20,20 @@ def main():
             if e.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+            # Delegate events if in Computer Graphics Laboratory mode
+            if game.state == "cglab":
+                if e.type == pygame.KEYDOWN and e.key in (pygame.K_ESCAPE, pygame.K_m, pygame.K_q):
+                    game.exit_cg_lab()
+                else:
+                    game.cg_lab.handle_event(e)
+                continue
+
+            if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                if game.state == "title":
+                    if game.handle_mouse_click(e.pos):
+                        continue
+
             if e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_ESCAPE:
                     if game.show_help:
@@ -32,7 +46,10 @@ def main():
                 if e.key == pygame.K_h:
                     game.toggle_help()
                 if e.key == pygame.K_l:
-                    game.r.toggle_line()
+                    if game.state == "title":
+                        game.enter_cg_lab()
+                    else:
+                        game.r.toggle_line()
                 if e.key == pygame.K_c:
                     game.r.toggle_clip()
                 if e.key == pygame.K_g:
@@ -53,8 +70,16 @@ def main():
                         game.new_game()
                     elif game.state == "levelclear":
                         game.load_level()
-                if e.key in (pygame.K_SPACE, pygame.K_f) and game.state == "play" and not game.show_help:
-                    game.shoot()
+                if game.state == "play" and not game.show_help:
+                    if e.key in (pygame.K_SPACE, pygame.K_f):
+                        game.shoot()
+                    elif e.key in (pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.K_x):
+                        k = pygame.key.get_pressed()
+                        vx = (k[pygame.K_RIGHT] or k[pygame.K_d]) - (k[pygame.K_LEFT] or k[pygame.K_a])
+                        vy = (k[pygame.K_DOWN] or k[pygame.K_s]) - (k[pygame.K_UP] or k[pygame.K_w])
+                        game.dash(vx, vy)
+                    elif e.key == pygame.K_e:
+                        game.toggle_shield()
                 if e.key == pygame.K_r and game.state in ("play", "pause"):
                     game.reset_level()
 
