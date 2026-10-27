@@ -8,6 +8,7 @@ Each cave is generated from a fixed seed (so the levels are always the same):
 The wall FACES are converted into line segments that the graphics
 module draws with DDA / Bresenham and clips with the torch window.
 """
+import math
 import random
 from collections import deque
 

@@ -219,12 +219,15 @@ def run_tests():
     for r, c in bfs_path:
         assert lvl.grid[r][c] == 0, f"BFS path traversed solid wall at ({r}, {c})"
 
-    # Verify Bat AI execution
+    # Verify Bat AI execution with BFS waypoint pursuit
     test_bat = lvl.bats[0]
     test_bat.alive = True
+    test_bat.bat_type = "stalker"
     test_bat.kind = "stalker"
+    test_bat.repath_tick = 1.0
     bx_orig, by_orig = test_bat.x, test_bat.y
-    test_bat.update_ai(lvl, game.px, game.py, 0.1)
+    for _ in range(5):
+        test_bat.update_ai(lvl, game.px, game.py, 0.05)
     assert (test_bat.x, test_bat.y) != (bx_orig, by_orig)
     assert not lvl.is_wall(test_bat.x, test_bat.y)
     print("  -> BFS corridor pathfinding and intelligent Stalker enemy navigation verified.")
