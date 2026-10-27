@@ -1,22 +1,57 @@
-# Dark Cave Explorer  -  Computer Graphics Mini Project (Python + pygame)
+# EmberVault: The Crystal Maze  -  Computer Graphics Project (Python + pygame)
 
 ## Run
-```
+```bash
 pip install pygame
 python main.py
 ```
-Controls: Arrow keys / WASD = move | **SPACE (or F) = shoot arrow** | L = switch DDA <-> Bresenham | C = switch Cohen-Sutherland <-> Liang-Barsky | R = restart level | ENTER = continue | ESC = quit
+**Controls**:
+- **Move**: Arrow keys / `W`, `A`, `S`, `D`
+- **Shoot Crystal Arrow**: `SPACE` or `F`
+- **Select Level (on Title)**: `1`, `2`, `3`, `4`, `5` or `TAB` / `Arrow Keys`
+- **Toggle Coordinate Grid Overlay**: `G`
+- **Pause / Resume**: `P`
+- **Field Guide & Theory**: `H`
+- **Switch Line Algorithm**: `L` (*DDA* $\leftrightarrow$ *Bresenham*)
+- **Switch Line Clipping**: `C` (*Cohen-Sutherland* $\leftrightarrow$ *Liang-Barsky*)
+- **Restart Level**: `R`
+- **Continue / Start**: `ENTER`
+- **Quit**: `ESC`
 
-## Story
-You explore a pitch-black cave. Your torch is a **clipping window** - everything outside it is not drawn.
-Collect all keys, avoid or **shoot the bats with arrows (SPACE)**, and enter the glowing portal. 3 levels, 3 lives.
-A destroyed bat explodes (+150 points) and comes back after 10 seconds.
+## Story & Visual Theme
+You explore the pitch-black crystal caverns of EmberVault. Your torch acts as an **active rectangular clipping window** emitting a cool radiant blue/cyan glow - geometry outside the light is rejected.
+Collect all amber vault keys, avoid or **shoot the shadow wraiths with crystal arrows (SPACE)**, and enter the glowing portal. 5 levels, 3 lives.
+A destroyed wraith shatters into purple and neon green plasma shards (+150 points) and respawns after 10 seconds.
 
-| Level | Torch size | Keys | Bats |
-|-------|-----------|------|------|
-| 1 - The Entrance | large | 1 | 1 (slow) |
-| 2 - The Crystal Tunnels | medium | 2 | 3 |
-| 3 - The Abyss | small | 3 | 5 (faster) |
+### Visual Identity & Component Styling
+- **Torch Glow**: Cool radiant electric cyan-to-blue gradient falloff (`#00e1ff` to `#0037af`) - zero yellow/orange tint
+- **Cave Walls & Floor**: Deep obsidian navy-black bases (`#080c14`, `#0e1420`) with 3D steel-cyan bevels, luminous electric cyan wall boundaries (`#00dcf5`), and bioluminescent cyan dust specks on navy floor pavers
+- **Creatures / Enemies**: Redesigned pixel-art Shadow Wraiths featuring deep purple carapaces (`#551487`, `#912dd7`), neon green razor mandibles, and animated neon green plasma wings and glowing eyes (`#39ff14`)
+- **Player Character**: Radiant diamond-white/cyan celestial core with titanium-silver crystal scepter and electric cyan plasma flame
+- **Collectibles**:
+  - **Vault Keys**: Spinning multifaceted amber-gold gems with radiant golden halo rings
+  - **Boost Crystals**: Luminous cyan shards granting *Crystal Surge* (+35% speed and +35px torch radius)
+  - **Exit Portal**: Celestial spinning star portal with radiant violet and cyan aura rings
+- **HUD & Radar**: Sleek dark navy status bar (`#0a0f18`) with crisp typography, heart indicators, score counters, reload gauge, and live Vault Radar mini-map
+
+| Level | Name | Starting Chamber | Torch size | Keys | Shadow Wraiths | Boosts |
+|---|---|---|---|---|---|---|
+| 1 | The Cobalt Gateway | Azure Archway `(1, 1)` | 155px | 1 | 1 Scout | - |
+| 2 | The Cyan Chasm | Cobalt Sanctuary `(13, 1)` | 125px | 2 | 2 Wraiths | 1 Crystal Surge |
+| 3 | The Obsidian Labyrinth | Obsidian Outpost `(7, 1)` | 105px | 3 | 3 Wraiths (Stalker) | 1 Crystal Surge |
+| 4 | The Abyssal Depths | Abyss Caldera `(1, 17)` | 92px | 4 | 4 Wraiths | 1 Crystal Surge |
+| 5 | The Sanctum Core | Sanctum Nexus `(13, 17)` | 80px | 5 | 5 Wraiths (Elite) | 1 Crystal Surge |
+
+## Added Features
+1. **Interactive Title Screen Overhaul**: Fixed text scaling with zero overlap, animated crystal gemstone showcase, drifting stardust particles, and instant level selector (`1-5` / `TAB`).
+2. **5 Cavern Levels with Distinct Starting Chambers**: Each level features unique entry points with dedicated runic teleport shrines and calibrated difficulties.
+3. **Crystal Surge Power-up**: Collectible cyan crystals in levels 2-5 granting $+35\%$ movement speed and $+35\text{px}$ torch illumination for 7 seconds.
+4. **Computer Graphics Grid Overlay (`G`)**: Live Cartesian coordinate grid lines clipped to the torch window with cell coordinates.
+5. **Pause & Resume (`P`)**: Seamlessly freezes player motion, bat patrols, and world timers with a crystal pause overlay.
+6. **Mini-map (Vault Radar)**: Unobtrusive real-time radar in the top-right displaying walls, walkable paths, uncollected amber keys, boost crystals, the portal, and the player.
+7. **Visual Feedback & Animations**: Floating score notices (`+250`, `+150`, `✦ SURGE ✦`), red damage vignette flash on hits, arrow impact sparks, and expanding circular ripples.
+8. **Best Score Persistence**: Saves and tracks the highest score locally in `best_score.txt` with in-memory fallback, displayed in the HUD and menu screens.
+9. **Field Guide / Help Screen (`H`)**: An in-game overlay detailing all active controls, objectives, and verified computer graphics algorithm implementations.
 
 ## Files
 | File | What is inside |
@@ -24,10 +59,11 @@ A destroyed bat explodes (+150 points) and comes back after 10 seconds.
 | `graphics.py` | DDA, Bresenham, Midpoint circle, Cohen-Sutherland, Liang-Barsky, Scan-line fill, Renderer (clip window) |
 | `matrix.py`   | 3x3 homogeneous matrices: translate, rotate, scale, shear, reflect, compose |
 | `levels.py`   | Cave generation + wall segments |
-| `game.py`     | Game logic and all drawing |
-| `main.py`     | Window + input loop |
+| `game.py`     | Game logic, HUD, minimap, states, and drawing routines |
+| `main.py`     | Window + 60 FPS input loop |
+| `test_game.py`| Automated test suite verifying mechanics, state transitions, and algorithms |
 
-pygame is used ONLY for the window, keyboard and putting pixels / 1-pixel-high strips on screen.
+pygame is used ONLY for the window, keyboard, and putting pixels / 1-pixel-high strips on screen.
 
 ## Where each CG concept is used
 | Concept | Where in the game | File / function |
